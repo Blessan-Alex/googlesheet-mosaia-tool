@@ -21,7 +21,8 @@ const server = http.createServer(async (req, res) => {
                         args: {
                             sheet_id: payload.sheet_id,
                             range: payload.range,
-                            summary: payload.summary
+                            summary: payload.summary,
+                            mode: payload.mode || 'overwrite'
                         },
                         secrets: {
                             GOOGLE_SERVICE_ACCOUNT_KEY: process.env.GOOGLE_SERVICE_ACCOUNT_KEY

@@ -1,5 +1,5 @@
 // src/index.ts
-import { writeToGoogleSheet } from './tool-call';
+import { writeToGoogleSheetEnhanced } from './tool-call-enhanced';
 
 export async function handler(event: any): Promise<any> {
   console.log('Handler received event:', JSON.stringify(event, null, 2));
@@ -11,11 +11,12 @@ export async function handler(event: any): Promise<any> {
       sheet_id: body.args.sheet_id,
       range: body.args.range,
       summary: body.args.summary,
+      mode: body.args.mode || 'overwrite', // Default to overwrite mode
       secrets: body.secrets
     };
     
-    // Call the function and return its result directly
-    const result = await writeToGoogleSheet(payload);
+    // Call the enhanced function and return its result directly
+    const result = await writeToGoogleSheetEnhanced(payload);
     return result;
 
   } catch (error: unknown) { // Explicitly type 'error' as 'unknown'

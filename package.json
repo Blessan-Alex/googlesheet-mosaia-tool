@@ -9,12 +9,14 @@
     "start:dev": "npm run build && node bin/dev.js",
     "test:request": "curl -X POST http://localhost:3000/write -H \"Content-Type: application/json\" -d \"{\\\"sheet_id\\\": \\\"1efj3u3zsHzFfVAvQAySjIemJpHtbsqBvLg3rXCUUpjE\\\", \\\"range\\\": \\\"Sheet1!A1\\\", \\\"summary\\\": \\\"This is a test summary written by the Mosaia tool.\\\"}\"",
     "test:request:ps": "powershell -ExecutionPolicy Bypass -File test-request.ps1",
+    "test:enhanced": "node test-enhanced.js",
     "validate:manifest": "node bin/validate-manifest.js",
     "get-user-id": "node get-user-id.js"
   },
   "devDependencies": {
     "@types/node": "^20.12.11",
     "ajv": "^8.12.0",
+    "axios": "^1.6.0",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "ts-node": "^10.9.2",

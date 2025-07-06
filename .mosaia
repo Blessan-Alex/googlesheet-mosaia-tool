@@ -1,26 +1,32 @@
 {
     "name": "Google Sheets Writer",
-    "description": "Writes a summary or data to a specified Google Sheet using the Google Sheets API.",
+    "description": "Writes data to Google Sheets with multiple write modes (overwrite, append, insert) and enhanced error handling.",
     "schema": {
         "type": "function",
         "function": {
             "name": "Google Sheets Write",
-            "description": "Writes a summary or data to a specified Google Sheet and range.",
+            "description": "Writes data to a Google Sheet with configurable write modes. Supports overwrite (default), append (add to next row), and insert (insert new row) modes. Includes enhanced error handling and validation.",
             "strict": true,
             "parameters": {
                 "type": "object",
                 "properties": {
                     "sheet_id": {
                         "type": "string",
-                        "description": "The ID of the Google Sheet to write to."
+                        "description": "The ID of the Google Sheet to write to (from the URL: https://docs.google.com/spreadsheets/d/[SHEET_ID]/edit)"
                     },
                     "range": {
                         "type": "string",
-                        "description": "The A1 notation of the range to write to (e.g., 'Sheet1!A1')."
+                        "description": "The A1 notation of the range to write to (e.g., 'Sheet1!A1', 'A1', 'A1:B5'). For append mode, specify the sheet name only."
                     },
                     "summary": {
                         "type": "string",
-                        "description": "The summary or data to write into the sheet."
+                        "description": "The data to write into the sheet"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "description": "Write mode: 'overwrite' (default), 'append' (add to next empty row), or 'insert' (insert new row)",
+                        "enum": ["overwrite", "append", "insert"],
+                        "default": "overwrite"
                     }
                 },
                 "required": [
