@@ -16,16 +16,6 @@ if (GOOGLE_SERVICE_ACCOUNT_KEY === undefined) {
     console.warn('`GOOGLE_SERVICE_ACCOUNT_KEY` not set. Please set it in your .env file. All requests will fail.');
 }
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'healthy', 
-        service: 'Google Sheets Writer',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development'
-    });
-});
-
 // POST endpoint for Google Sheets writing
 app.post('/write', async (req, res) => {
     if (!GOOGLE_SERVICE_ACCOUNT_KEY) {
