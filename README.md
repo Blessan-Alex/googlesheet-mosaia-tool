@@ -83,3 +83,5 @@ The only requirements for a Mosaia Tool are that it:
 2. defines an npm `build` command
 3. `npm run build` emits transpiled code into a `dist` directory
 4. the entrypoint of the transpiled code is `dist/index.js`.
+
+Bless
