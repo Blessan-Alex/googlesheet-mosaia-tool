@@ -32,7 +32,8 @@
                 "required": [
                     "sheet_id",
                     "range",
-                    "summary"
+                    "summary",
+                    "mode"
                 ],
                 "additionalProperties": false
             }
