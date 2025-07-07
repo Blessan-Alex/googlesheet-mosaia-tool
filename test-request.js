@@ -76,10 +76,16 @@ async function testWriteToSheet() {
   console.log('=' .repeat(50));
   
   try {
+    const testData = {
+      ...TEST_CONFIG.testData,
+      mode: 'overwrite',
+      secrets: { GOOGLE_SERVICE_ACCOUNT_KEY: process.env.GOOGLE_SERVICE_ACCOUNT_KEY || 'dummy' }
+    };
+
     const response = await makeRequest(
       `${TEST_CONFIG.baseUrl}${TEST_CONFIG.endpoints.write}`,
       { method: 'POST' },
-      TEST_CONFIG.testData
+      testData
     );
 
     console.log(`Status Code: ${response.statusCode}`);
@@ -103,13 +109,17 @@ async function testInvalidSheetId() {
   console.log('=' .repeat(50));
   
   try {
+    const testData = {
+      ...TEST_CONFIG.testData,
+      sheet_id: 'invalid-sheet-id',
+      mode: 'overwrite',
+      secrets: { GOOGLE_SERVICE_ACCOUNT_KEY: process.env.GOOGLE_SERVICE_ACCOUNT_KEY || 'dummy' }
+    };
+
     const response = await makeRequest(
       `${TEST_CONFIG.baseUrl}${TEST_CONFIG.endpoints.write}`,
       { method: 'POST' },
-      {
-        ...TEST_CONFIG.testData,
-        sheet_id: 'invalid-sheet-id'
-      }
+      testData
     );
 
     console.log(`Status Code: ${response.statusCode}`);
@@ -132,20 +142,35 @@ async function testMissingParameters() {
   console.log('\n🧪 Testing: Missing Parameters');
   console.log('=' .repeat(50));
   
+  const base = {
+    mode: 'overwrite',
+    secrets: { GOOGLE_SERVICE_ACCOUNT_KEY: process.env.GOOGLE_SERVICE_ACCOUNT_KEY || 'dummy' }
+  };
+  
   const testCases = [
-    { name: 'Missing sheet_id', data: { range: TEST_CONFIG.testData.range, summary: TEST_CONFIG.testData.summary } },
-    { name: 'Missing range', data: { sheet_id: TEST_CONFIG.testData.sheet_id, summary: TEST_CONFIG.testData.summary } },
-    { name: 'Missing summary', data: { sheet_id: TEST_CONFIG.testData.sheet_id, range: TEST_CONFIG.testData.range } }
+    { name: 'Missing sheet_id', data: { ...base, range: TEST_CONFIG.testData.range, summary: TEST_CONFIG.testData.summary } },
+    { name: 'Missing range', data: { ...base, sheet_id: TEST_CONFIG.testData.sheet_id, summary: TEST_CONFIG.testData.summary } },
+    { name: 'Missing summary', data: { ...base, sheet_id: TEST_CONFIG.testData.sheet_id, range: TEST_CONFIG.testData.range } },
+    { name: 'Missing mode', data: { ...base, sheet_id: TEST_CONFIG.testData.sheet_id, range: TEST_CONFIG.testData.range, summary: TEST_CONFIG.testData.summary } },
+    { name: 'Missing secrets', data: { sheet_id: TEST_CONFIG.testData.sheet_id, range: TEST_CONFIG.testData.range, summary: TEST_CONFIG.testData.summary, mode: 'overwrite' } }
   ];
 
   let allPassed = true;
 
   for (const testCase of testCases) {
+    // Remove the field to simulate missing
+    const data = { ...testCase.data };
+    if (testCase.name.includes('sheet_id')) delete data.sheet_id;
+    if (testCase.name.includes('range')) delete data.range;
+    if (testCase.name.includes('summary')) delete data.summary;
+    if (testCase.name.includes('mode')) delete data.mode;
+    if (testCase.name.includes('secrets')) delete data.secrets;
+    
     try {
       const response = await makeRequest(
         `${TEST_CONFIG.baseUrl}${TEST_CONFIG.endpoints.write}`,
         { method: 'POST' },
-        testCase.data
+        data
       );
 
       console.log(`\n${testCase.name}:`);
@@ -173,14 +198,14 @@ async function testServerHealth() {
   
   try {
     const response = await makeRequest(
-      `${TEST_CONFIG.baseUrl}/health`,
+      `${TEST_CONFIG.baseUrl}/`,
       { method: 'GET' }
     );
 
     console.log(`Status Code: ${response.statusCode}`);
     console.log('Response:', JSON.stringify(response.body, null, 2));
 
-    if (response.statusCode === 200) {
+    if (response.statusCode === 200 && response.body && response.body.status === 'ok') {
       console.log('✅ Health check PASSED');
       return true;
     } else {
@@ -189,7 +214,6 @@ async function testServerHealth() {
     }
   } catch (error) {
     console.log('❌ Health check FAILED with error:', error.message);
-    console.log('Note: Health endpoint might not be implemented yet');
     return false;
   }
 }
@@ -197,44 +221,31 @@ async function testServerHealth() {
 // Main test runner
 async function runAllTests() {
   console.log('🚀 Starting Google Sheets Tool Tests');
-  console.log('=' .repeat(60));
+  console.log('='.repeat(60));
   console.log(`Base URL: ${TEST_CONFIG.baseUrl}`);
   console.log(`Test Sheet ID: ${TEST_CONFIG.testData.sheet_id}`);
   console.log(`Test Range: ${TEST_CONFIG.testData.range}`);
-  console.log('=' .repeat(60));
+  console.log('='.repeat(60));
 
-  const results = {
-    health: await testServerHealth(),
-    write: await testWriteToSheet(),
-    invalidSheet: await testInvalidSheetId(),
-    validation: await testMissingParameters()
-  };
+  let passCount = 0;
+  let total = 4;
+
+  if (await testServerHealth()) passCount++;
+  if (await testWriteToSheet()) passCount++;
+  if (await testInvalidSheetId()) passCount++;
+  if (await testMissingParameters()) passCount++;
 
   console.log('\n📊 Test Results Summary');
-  console.log('=' .repeat(60));
-  console.log(`Health Check: ${results.health ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`Write to Sheet: ${results.write ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`Invalid Sheet ID: ${results.invalidSheet ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`Parameter Validation: ${results.validation ? '✅ PASS' : '❌ FAIL'}`);
-
-  const passedTests = Object.values(results).filter(Boolean).length;
-  const totalTests = Object.keys(results).length;
-
-  console.log(`\nOverall: ${passedTests}/${totalTests} tests passed`);
-
-  if (passedTests === totalTests) {
-    console.log('🎉 All tests passed! Your tool is ready for Mosaia.');
+  console.log('='.repeat(60));
+  console.log(`Passed: ${passCount}/${total}`);
+  if (passCount === total) {
+    console.log('🎉 All tests PASSED!');
   } else {
-    console.log('⚠️  Some tests failed. Please check the errors above.');
+    console.log('⚠️  Some tests FAILED. Please check the errors above.');
   }
-
-  return results;
 }
 
-// Run tests if this file is executed directly
-if (require.main === module) {
-  runAllTests().catch(console.error);
-}
+runAllTests();
 
 module.exports = {
   runAllTests,

@@ -1,52 +1,48 @@
 require('dotenv').config();
 // server.js
-const http = require('http');
-const { handler } = require('./dist/index');
+const express = require('express');
+const bodyParser = require('body-parser');
+const { writeToGoogleSheetEnhanced } = require('./dist/tool-call-enhanced');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-const PORT = 3000; // The port your local server will listen on
+app.use(bodyParser.json());
 
-const server = http.createServer(async (req, res) => {
-    if (req.method === 'POST' && req.url === '/write') {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-        req.on('end', async () => {
-            try {
-                const payload = JSON.parse(body);
-                console.log('Received payload:', payload);
-
-                const event = {
-                    body: JSON.stringify({
-                        args: {
-                            sheet_id: payload.sheet_id,
-                            range: payload.range,
-                            summary: payload.summary,
-                            mode: payload.mode || 'overwrite'
-                        },
-                        secrets: {
-                            GOOGLE_SERVICE_ACCOUNT_KEY: process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-                        }
-                    })
-                };
-
-                const result = await handler(event);
-                res.writeHead(result.statusCode, { 'Content-Type': 'application/json' });
-                res.end(result.body);
-            } catch (error) {
-                console.error('Error processing request:', error);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: error.message }));
-            }
-        });
-    } else {
-        // For any other requests, just send a simple message
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('This is the Google Sheets Writer server. Send POST requests to /write.');
-    }
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Google Sheets Tool is running.' });
 });
 
-server.listen(PORT, () => {
-    console.log(`Local server running on http://localhost:${PORT}`);
-    console.log('Ready to receive POST requests to /write...');
+// POST /write endpoint
+app.post('/write', async (req, res) => {
+  const { sheet_id, range, summary, mode, secrets } = req.body;
+
+  // Improved parameter validation
+  const missing = [];
+  if (!sheet_id) missing.push('sheet_id');
+  if (!range) missing.push('range');
+  if (!summary) missing.push('summary');
+  if (!mode) missing.push('mode');
+  if (!secrets || !secrets.GOOGLE_SERVICE_ACCOUNT_KEY) missing.push('secrets.GOOGLE_SERVICE_ACCOUNT_KEY');
+
+  if (missing.length > 0) {
+    return res.status(400).json({
+      error: `Missing required parameter(s): ${missing.join(', ')}`,
+      help: 'Please provide all required parameters.'
+    });
+  }
+
+  try {
+    const result = await writeToGoogleSheetEnhanced({ sheet_id, range, summary, mode, secrets });
+    let body = result.body;
+    try { body = JSON.parse(body); } catch (e) {}
+    res.status(result.statusCode || 200).json(body);
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Local development server running on port ${PORT}`);
+  console.log('POST to /write with JSON: { "sheet_id": "...", "range": "...", "summary": "...", "mode": "...", "secrets": { "GOOGLE_SERVICE_ACCOUNT_KEY": "..." } }');
 });

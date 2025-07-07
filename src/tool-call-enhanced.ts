@@ -59,6 +59,11 @@ export async function writeToGoogleSheetEnhanced(payload: EnhancedPayload): Prom
       return rangeValidation;
     }
 
+    // Provide guidance for append mode
+    if (mode === 'append' && range.includes('!') && !range.includes(':')) {
+      console.log(`Note: Converting range "${range}" to sheet name for append mode`);
+    }
+
     // Write data based on mode
     let response;
     switch (mode) {
@@ -193,18 +198,20 @@ function validateRangeFormat(range: string, sheetNames: string[]) {
   // Basic A1 notation validation
   const a1Pattern = /^[A-Za-z]+\d+(?::[A-Za-z]+\d+)?$/;
   const sheetRangePattern = /^[^!]+![A-Za-z]+\d+(?::[A-Za-z]+\d+)?$/;
+  const sheetNamePattern = /^[^!]+$/; // Just sheet name without range
 
-  if (!a1Pattern.test(range) && !sheetRangePattern.test(range)) {
+  if (!a1Pattern.test(range) && !sheetRangePattern.test(range) && !sheetNamePattern.test(range)) {
     return {
       statusCode: 400,
       body: JSON.stringify({
         error: 'Invalid range format',
-        help: 'Use A1 notation like "A1", "B5", "A1:B10", or "Sheet1!A1"',
+        help: 'Use A1 notation like "A1", "B5", "A1:B10", "Sheet1!A1", or just "Sheet1" for append mode',
         examples: [
           'A1 - Single cell',
-          'B5 - Single cell',
+          'B5 - Single cell', 
           'A1:B10 - Range of cells',
           'Sheet1!A1 - Specific sheet and cell',
+          'Tasks - Sheet name (for append mode)',
           'Data!A1 - Sheet named "Data"'
         ],
         availableSheets: sheetNames
@@ -219,9 +226,21 @@ function validateRangeFormat(range: string, sheetNames: string[]) {
  * Append data to the next empty row
  */
 async function appendToSheet(sheets: any, sheet_id: string, range: string, summary: string) {
+  // For append mode, we need to convert the range to a proper append format
+  // If range is "SheetName!A1", convert to "SheetName!A:A" or just "SheetName"
+  let appendRange = range;
+  
+  // If range contains a specific cell (like "Tasks!A1"), extract just the sheet name
+  if (range.includes('!')) {
+    const sheetName = range.split('!')[0];
+    appendRange = sheetName;
+  }
+  
+  console.log(`Appending to range: ${appendRange}`);
+  
   return await sheets.spreadsheets.values.append({
     spreadsheetId: sheet_id,
-    range: range,
+    range: appendRange,
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {

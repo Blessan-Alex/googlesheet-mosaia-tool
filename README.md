@@ -38,6 +38,22 @@ Could implement:
 - Permission request flow through OAuth
 - Sheet sharing automation via Google Drive API
 
+## Range Format Guide
+
+### Supported Range Formats
+- **Single cell**: `A1`, `B5`, `C10`
+- **Cell range**: `A1:B10`, `C5:D15`
+- **Sheet with cell**: `Sheet1!A1`, `Tasks!B5`
+- **Sheet name only**: `Sheet1`, `Tasks` (for append mode)
+
+### Write Modes
+- **overwrite** (default): Replaces content at the specified range
+- **append**: Adds data to the next empty row in the sheet
+- **insert**: Inserts a new row and adds data
+
+### Important Notes for Append Mode
+When using `mode: "append"`, the tool automatically converts ranges like `"Tasks!A1"` to just `"Tasks"` to work properly with Google Sheets API. This is the correct behavior for appending data.
+
 ## Getting Started
 1. Register for an account on mosaia.ai
 2. Fork/copy this repo
